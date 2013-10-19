@@ -4,28 +4,42 @@
 // - audioOutputExample source code
 // - James M's contributions: 1) working through math for linear tone/mouse relationship, and 2) square wave
 
-// TODO: continue building Partisynth object: init(), update(), draw()
+// TODO: continue building Partisynth object: init() > has soundstream issues
+// - aggregate audio, screenshake, and screenflicker into main app
 
 //--------------------------------------------------------------
 void testApp::setup(){
     
 	ofSetFrameRate(60);
+    updatePartisynths = 0;
     
-    // Partisynth creation and initialization
+    numPartisynths = 8;
+    // numPartisynths = 0;
+    
+    // Partisynth creation
     partisynths.clear();
-    Partisynth ps1;
-    partisynths.push_back(ps1);
-    // everything works up to here
-    //partisynths[1].init();
+    for (int i=0; i < numPartisynths; i++) {
+        Partisynth ps;
+        partisynths.push_back(ps);
+    }
     
-    emitters.clear();
+	// Partisynth initialization
+    for (int i=0; i < numPartisynths; i++) {
+        partisynths[i].init(0.5f);
+    }
+    
+    numPartisynths = 1;
+    
+    
+    // populate emitters list
     numEmitters = 3;
-    
+    emitters.clear();
     for (int i=0; i < numEmitters; i++) {
         ofxParticleEmitter emitter;
         emitters.push_back(emitter);
     }
-	
+
+	// load emitter settings from XML
     for (int i=0; i < emitters.size(); i++) {
         if ( !emitters[i].loadFromXml( "circles_subdued.pex"/*"drugs_subdued.pex"*/ ) )
         {
@@ -79,6 +93,65 @@ void testApp::setup(){
 
 //--------------------------------------------------------------
 void testApp::update(){
+    
+    ///*
+    cout << "====" << endl;
+    cout << "== update() ==" << endl;
+    
+    if (updatePartisynths > 0 ) {
+        cout << "increasePartisyths = true" << endl;
+        cout << "numPartisynths = " << numPartisynths << endl;
+        cout << "partisynths.size() = " << partisynths.size() << endl;
+
+        if (partisynths.size() == numPartisynths) {
+            /*
+            cout << "(parti partisynths.size() == numPartisynths) = true"
+            << endl;
+            cout << "creating new partisynth" << endl;
+            Partisynth ps;
+            partisynths.push_back(ps);
+            cout << "partisynths.size() = " << partisynths.size() << endl;
+             */
+        } else {
+            cout << "initializing: partisynths[" << numPartisynths << "]" << endl;
+            partisynths[partisynths.size() - 1].init();
+            cout << "incrementing: numPartisynths " << endl;
+            numPartisynths++;
+            cout << "numPartisynths = " << numPartisynths << endl;
+            float sizeAdjustment = 1.0f / (float)numPartisynths;
+            for (int i=0; i<numPartisynths; i++){
+                partisynths[i].sizeAdjustment = 2* pow(sizeAdjustment, 2);
+            }
+            updateProperties();
+        }
+        updatePartisynths = 0;
+    } else if (updatePartisynths < 0){
+        if (numPartisynths > 1) {
+            cout << "decrementing: numPartisynths " << endl;
+            numPartisynths--;
+            cout << "numPartisynths = " << numPartisynths << endl;
+            // partisynths[numPartisynths].exit();
+            float sizeAdjustment = 1.0f / (float)numPartisynths;
+            for (int i=0; i<numPartisynths; i++){
+                partisynths[i].sizeAdjustment = 2* pow(sizeAdjustment, 2);
+            }
+            updateProperties();
+        }
+        updatePartisynths = 0;
+    }
+    cout << "====" << endl;
+    //*/
+
+    
+    // Partisynth updates
+    if (numPartisynths > 0) {
+        for (int i=0; i < numPartisynths; i++) {
+            // TODO: Do I need some kind of test in here to make sure partisynths[i] exists?
+            // if (partisynths[i].active)
+                partisynths[i].update();
+        }
+    }
+    
     updateEmitters();
 }
 
@@ -146,6 +219,11 @@ void testApp::updateProperties(){
 
 void testApp::updateProperties(int x, int y){
     
+    // Partisynth mouse moved calls
+    for (int i=0; i < numPartisynths; i++) {
+        partisynths[i].mouseMoved(x + 100 * i * sin(i), y + 100 * i * cos(i));
+    }
+    
     int width = ofGetWidth();
 	float height = ofGetHeight();
 	pan = (float)x / (float)width;
@@ -168,6 +246,7 @@ void testApp::updateProperties(int x, int y){
 //--------------------------------------------------------------
 void testApp::draw(){
     
+  
     string  screenLabel         = "PARTISYNTH";
     bool    screenShake         = false;
     bool    screenFlicker       = false;
@@ -204,15 +283,17 @@ void testApp::draw(){
     }
 
     if (screenShake) {
-        ofTranslate(ofRandomf() * volume * pow(targetFrequency,2)/400000, 
-                    ofRandomf() * volume * pow(targetFrequency,2)/400000, 
-                    ofRandomf() * volume * targetFrequency       /400);        
+        int mult = 5;
+        ofTranslate(ofRandomf() * volume * pow(targetFrequency,mult)    / pow(2000.0f, mult  ), 
+                    ofRandomf() * volume * pow(targetFrequency,mult)    / pow(2000.0f, mult  ), 
+                    ofRandomf() * volume * pow(targetFrequency,mult/2)  / pow(2000.0f, mult/2) );        
     }
 
     if (screenFlicker) {
-        ofBackground(16     + ofRandom( targetFrequency /100 ), 
-                     64     + ofRandom( heightPct       /50 ), 
-                     128    + ofRandom( targetFrequency /25 ));
+        float mult = 5;
+        ofBackground(16     + ofRandom( pow(targetFrequency, mult)      / pow(2048.0f, mult ) ), 
+                     64     + ofRandom( pow(targetFrequency, mult)      / pow(2048.0f, mult ) ),
+                     128    + ofRandom( pow(targetFrequency, mult)      / pow(2048.0f, mult ) ) );
     }
     else {
         ofBackground(16, 64, 128);
@@ -229,19 +310,24 @@ void testApp::draw(){
         instructions += "press 'i' for irregular triangle";
         instructions += "press 'w' for sawtooth wave //////\n";
         instructions += "press 'W' for sawtooth wave \\\\\\\\\\\\\n";
-        instructions += "press 'q' for square wave\n";
+        instructions += "press left mouse button more more particles\n";
+        instructions += "press right mouse button for less particles\n";
         ofDrawBitmapString(instructions, 31, 62);
     
     }
     
     if (drawEmitter) {
         
+        // Partisynth drawing calls
+        for (int i=0; i < numPartisynths; i++) {
+            partisynths[i].draw();
+        }
         
-        
+        /*
         for (int i=0; i < emitters.size(); i++) {
             emitters[i].draw( 0, 0 );
         }
-        
+         */
 
     }
     
@@ -355,6 +441,10 @@ void testApp::draw(){
 
 //--------------------------------------------------------------
 void testApp::keyPressed  (int key){
+    
+    for (int i = 0; i < numPartisynths; i++){
+        partisynths[i].keyPressed(key);
+    }
 
     string  filename                    = "";
 
@@ -456,13 +546,36 @@ void testApp::setPhaseAdderTarget () {
 //--------------------------------------------------------------
 void testApp::mouseDragged(int x, int y, int button){
 
-    updateProperties(x, y);
+    mouseMoved(x, y);
 
 }
 
 //--------------------------------------------------------------
 void testApp::mousePressed(int x, int y, int button){
 	bNoise = true;
+    
+    cout << "====" << endl;
+    cout << "mousePressed(): button = " << button << endl;
+
+    
+    switch (button) {
+        case OF_MOUSE_BUTTON_1:
+            if (!ofGetKeyPressed(OF_KEY_CONTROL)) {
+                // increase number of partisynths
+                updatePartisynths = 1;
+            } else {
+                cout << "OF_KEY_CONTROL = pressed" << button << endl;
+                // decrease number of partisynths
+                updatePartisynths = -1;
+            }
+            break;
+                
+        case OF_MOUSE_BUTTON_2:
+        default:
+            // decrease number of partisynths
+            updatePartisynths = -1;
+            break;
+    }
 }
 
 
@@ -478,6 +591,14 @@ void testApp::windowResized(int w, int h){
 
 //--------------------------------------------------------------
 void testApp::audioOut(float * output, int bufferSize, int nChannels){
+    
+    // Partisynth oudioOut calls
+    for (int i=0; i < numPartisynths; i++) {
+        partisynths[i].audioOut(output, bufferSize, nChannels); 
+        // TODO: add arguments for relative volume
+        // - clear audio buffers?
+    }
+    
 	//pan = 0.5f;
 	float leftScale = 1 - pan;
 	float rightScale = pan;

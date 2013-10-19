@@ -9,7 +9,12 @@
 class Partisynth {
 public:
     
+    Partisynth();
+    ~Partisynth();
+    
     void    init();
+    void    exit();
+    void    init(float multiplier);
     void    update();
     void    draw();
     
@@ -26,6 +31,7 @@ public:
     // can I just call "oudioout()" with proper arguments from the testApp object?
     void    audioOut(float * input, int bufferSize, int nChannels);
     
+    float   sizeAdjustment;
     float 	pan;
     float 	volume;
     bool    paused;
@@ -40,7 +46,7 @@ public:
     // - specific tones
     // - could have a mode that snaps input to tones, semitones, and even particulat scales
     
-protected:
+protected: //how is this different from "private:"?
     void    updateEmitters();
     void    updateProperties(int x, int y);
     void    updateProperties();

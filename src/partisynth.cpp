@@ -1,4 +1,4 @@
-///*
+
 
 #include "partisynth.h"
 
@@ -12,19 +12,20 @@
 
 //--------------------------------------------------------------
 
-void Partisynth::init(){
-    
+Partisynth::Partisynth(){
     screenID                    = 'e';
     numEmitters                 = 3;
     updateParticleTexture       = false;
     xmlFilename                 = "circles_subdued.pex";
     texFilename                 = "0005_circle.png";
     
+    
+    sizeAdjustment              = 1.0f;
 	phase                       = 0;
 	phaseAdder                  = 0.0f;
 	phaseAdderTarget            = 0.0f;
     phaseAdderTargetTween       = 0.5f;
-	volume                      = 0.25f;
+	volume                      = 1.0f;
 	bNoise                      = false;
     paused                      = false;
     waveform                    = 's';
@@ -34,20 +35,59 @@ void Partisynth::init(){
     volumeWaveformAdjustment    = 0.9995f; // will sort of not work if you assign any values >=1.0f
     volumeAdjustment            = volumeFrequencyAdjustment * volumeWaveformAdjustment;
     
+    
     // ===============----
+    
+ 	sampleRate                  = 44100; 
+}
 
+Partisynth::~Partisynth(){
+    exit();
+}
+
+void Partisynth::exit(){
+    if ( lAudio.size() != 0 ) {
+        lAudio.clear();
+    }
+    //lAudio = NULL;
+    
+    if ( rAudio.size() != 0 ) {
+        rAudio.clear();    
+    }
+    //rAudio = NULL;
+
+    if ( emitters .size() != 0 ) {
+        for (int i = 0; i < emitters.size(); i++) {
+            emitters[i].exit();
+        }
+        emitters.clear();
+    }
+    //emitters = NULL;
+    
+}
+
+void Partisynth::init(){
+    init(1.0f);
+}
+
+void Partisynth::init(float multiplier){
+//*    
+	
+	volume                      = multiplier;
+
+    // ===============----
+    
 	// 2 output channels,
 	// 0 input channels
 	// 22050 samples per second
 	// 512 samples per buffer
 	// 4 num buffers (latency)
-	int bufferSize              = 512;
-	sampleRate                  = 44100;
+    int bufferSize              = 512;
 	lAudio.assign(bufferSize, 0.0);
 	rAudio.assign(bufferSize, 0.0);
-	
-    // TODO: trouble-shoot soundstream — was acting funny
-	// soundStream.setup(this, 2, 0, sampleRate, bufferSize, 4);
+    // TODO: trouble-shoot soundstream, is acting funny
+    // "No matching member function for call to 'setup'
+	//soundStream.setup(this, 2, 0, sampleRate, bufferSize, 4);
 
     // NOTES:
     //soundStream.listDevices();
@@ -69,11 +109,14 @@ void Partisynth::init(){
     }
 
     setPhaseAdderTarget();
+//*/
 }
 
 //--------------------------------------------------------------
 void Partisynth::update(){
+///*
     updateEmitters();
+//*/
 }
 
 void Partisynth::updateEmitters(){
@@ -100,11 +143,11 @@ void Partisynth::updateEmitters(){
         emitters[i].finishColor.green   = 0.0f;
         emitters[i].finishColor.blue    = 0.0f;
         emitters[i].finishColor.alpha   = 0.0f;
-        emitters[i].startParticleSize = 10 / (1.05f-volume) + (1-heightPct/2)  * 60.0f;
+        emitters[i].startParticleSize = 10 / (1.05f-volume) + (1-heightPct) * 30.0f * sizeAdjustment;
         emitters[i].startParticleSizeVariance = 0.0f; // 20 + (1-heightPct)  * 60.0f;
-        emitters[i].finishParticleSize = 1 + heightPct  * 60.0f;
+        emitters[i].finishParticleSize = 1 + heightPct * 60.0f *sizeAdjustment;
         emitters[i].finishParticleSizeVariance = 0.0f; // 20 + (1-heightPct)  * 60.0f;
-        emitters[i].speed = 40 + heightPct * 5000.0f * volume;
+        emitters[i].speed = 40 + heightPct * 2500.0f * volume *sizeAdjustment;
         emitters[i].speedVariance = 0.0f;
         emitters[i].particleLifespan = MIN( 0.5f + 100.0f / emitters[i].speed, 30.0f);
         
@@ -138,9 +181,22 @@ void Partisynth::updateProperties(){
 
 void Partisynth::updateProperties(int x, int y){
     
+    
     int width = ofGetWidth();
 	float height = ofGetHeight();
-	pan = (float)x / (float)width;
+
+    // application can crash if you try to set things to move
+    // to values less than zero and 
+    if (x < 0)
+        x = 0;
+    else if (x > width)
+        x = width;
+    if (y < 0)
+        y = 0;
+    else if (y > height)
+        y = height;
+    
+    pan = (float)x / (float)width;
 	heightPct = ((height-y) / height);
     
     // linear relationship between frequency and mouse Y
@@ -257,7 +313,7 @@ void Partisynth::audioOut(float * output, int bufferSize, int nChannels){
 
 //--------------------------------------------------------------
 void Partisynth::draw(){
-    
+///*    
     string  screenLabel         = "PARTISYNTH";
     bool    screenShake         = false;
     bool    screenFlicker       = false;
@@ -275,11 +331,11 @@ void Partisynth::draw(){
         case 'e': // emitter screen
             screenLabel         += ": emitter screen";
             if (!paused) {
-                screenFlicker       = true;
-                screenShake         = true;
+                // screenFlicker       = true; // TODO: make these be handled externally
+                // screenShake         = true;
             }
             drawEmitter         = true;
-            drawInstructions    = true;
+            // drawInstructions    = true;
             // drawReport          = true;
             break;
        
@@ -299,6 +355,8 @@ void Partisynth::draw(){
                     ofRandomf() * volume * targetFrequency       /400);        
     }
 
+/*
+ 
     if (screenFlicker) {
         ofBackground(16     + ofRandom( targetFrequency /100 ), 
                      64     + ofRandom( heightPct       /50 ), 
@@ -307,6 +365,8 @@ void Partisynth::draw(){
     else {
         ofBackground(16, 64, 128);
     }
+     
+//*/
 
     if (drawInstructions) {
         // instructions
@@ -440,6 +500,7 @@ void Partisynth::draw(){
     }
 
     ofPopMatrix();
+//*/
 }
 
 //--------------------------------------------------------------
@@ -528,6 +589,12 @@ void Partisynth::keyPressed(int key){
 //--------------------------------------------------------------
 void Partisynth::mouseMoved(int x, int y ){
     
+    updateProperties(x, y);
+    
+}
+
+void Partisynth::updateEmitterPosition(int x, int y ) {
+
     updateProperties(x, y);
     
 }

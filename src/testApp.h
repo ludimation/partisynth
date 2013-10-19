@@ -23,7 +23,9 @@ public:
     void gotMessage(ofMessage msg);
     
     // TODO: partisynth-handling properties and functions need to be defined
+    int     numPartisynths;
     vector <Partisynth> partisynths;
+    int updatePartisynths;
     
     // TODO: can this be moved into partisynth object?
     void audioOut(float * input, int bufferSize, int nChannels);
