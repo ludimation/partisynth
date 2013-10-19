@@ -126,6 +126,43 @@ void testApp::updateEmitters(){
 
 }
 
+void testApp::updateProperties(){
+
+    int x = ofGetMouseX();
+    int y = ofGetMouseY();
+    
+    // set default values so we don't get ridiculous pitches at start of program
+    if (!x && !y) {
+        int width = ofGetWidth();
+        float height = ofGetHeight();
+        x = width / 2.0f;
+        y = height / 2.0f;
+    }
+
+    updateProperties(x, y);    
+}
+
+void testApp::updateProperties(int x, int y){
+    
+    int width = ofGetWidth();
+	float height = ofGetHeight();
+	pan = (float)x / (float)width;
+	heightPct = ((height-y) / height);
+
+    // linear relationship between frequency and mouse Y
+    // targetFrequency = 2000.0f * heightPct); 
+    // exponential relationship between frequency and mouse Y
+    // TODO: could make this "snap" to chromatic scales
+	targetFrequency = 100.0f * pow(1.059463094359f, heightPct*75.0f); 
+    
+	setPhaseAdderTarget();
+        
+    for (int i=0; i < emitters.size(); i++) {
+        emitters[i].sourcePosition.x = x;
+        emitters[i].sourcePosition.y = y;
+    }
+}
+
 //--------------------------------------------------------------
 void testApp::draw(){
     
@@ -407,32 +444,6 @@ void testApp::mouseMoved(int x, int y ){
     
     updateProperties(x, y);
     
-}
-
-void testApp::updateProperties(){
-    
-    updateProperties(ofGetMouseX(), ofGetMouseY());
-    
-}
-
-void testApp::updateProperties(int x, int y){
-    
-	int width = ofGetWidth();
-	pan = (float)x / (float)width;
-	height = (float)ofGetHeight();
-	heightPct = ((height-y) / height);
-    // linear relationship between frequency and mouse Y
-    // targetFrequency = 2000.0f * heightPct); 
-    // exponential relationship between frequency and mouse Y
-    // TODO: could make this "snap" to chromatic scales
-	targetFrequency = 100.0f * pow(1.059463094359f, heightPct*75.0f); 
-    
-	setPhaseAdderTarget();
-    
-    for (int i=0; i < emitters.size(); i++) {
-        emitters[i].sourcePosition.x = x;
-        emitters[i].sourcePosition.y = y;
-    }
 }
 
 //--------------------------------------------------------------
