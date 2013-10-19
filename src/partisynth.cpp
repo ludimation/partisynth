@@ -1,4 +1,6 @@
-#include "testApp.h"
+/*
+
+#include "partisynth.h"
 
 // TODO: develop credits, including 
 // - audioOutputExample source code
@@ -7,7 +9,8 @@
 // TODO: 
 
 //--------------------------------------------------------------
-void testApp::setup(){
+
+void partisynth::init(){
     
     ofSetFrameRate( 60 );
     
@@ -20,7 +23,7 @@ void testApp::setup(){
     }
 	
     for (int i=0; i < emitters.size(); i++) {
-        if ( !emitters[i].loadFromXml( "circles_subdued.pex"/*"drugs_subdued.pex"*/ ) )
+        if ( !emitters[i].loadFromXml( "circles_subdued.pex") )
         {
             ofLog( OF_LOG_ERROR, "testApp::setup() - failed to load emitter[" + ofToString(i) + "] config" );
         }    
@@ -64,7 +67,7 @@ void testApp::setup(){
 	//if you want to set the device id to be different than the default
 	//soundStream.setDeviceID(1); 	//note some devices are input only and some are output only 
 
-	soundStream.setup(this, 2, 0, sampleRate, bufferSize, 4);
+	// soundStream.setup(this, 2, 0, sampleRate, bufferSize, 4);
 
 	ofSetFrameRate(60);
     
@@ -74,13 +77,12 @@ void testApp::setup(){
     int y = ofGetHeight();
 }
 
-
 //--------------------------------------------------------------
-void testApp::update(){
+void partisynth::update(){
     updateEmitters();
 }
 
-void testApp::updateEmitters(){
+void partisynth::updateEmitters(){
     for (int i=0; i < emitters.size(); i++) {
         if (updateParticleTexture) {
             emitters[i].loadFromXml(xmlFilename);
@@ -127,7 +129,7 @@ void testApp::updateEmitters(){
 }
 
 //--------------------------------------------------------------
-void testApp::draw(){
+void partisynth::draw(){
     
     string  screenLabel         = "PARTISYNTH";
     bool    screenShake         = false;
@@ -313,9 +315,8 @@ void testApp::draw(){
     ofPopMatrix();
 }
 
-
 //--------------------------------------------------------------
-void testApp::keyPressed  (int key){
+void partisynth::keyPressed(int key){
 
     string  filename                    = "";
 
@@ -398,24 +399,19 @@ void testApp::keyPressed  (int key){
 }
 
 //--------------------------------------------------------------
-void testApp::keyReleased  (int key){
-
-}
-
-//--------------------------------------------------------------
-void testApp::mouseMoved(int x, int y ){
+void partisynth::mouseMoved(int x, int y ){
     
     updateProperties(x, y);
     
 }
 
-void testApp::updateProperties(){
+void partisynth::updateProperties(){
     
     updateProperties(ofGetMouseX(), ofGetMouseY());
     
 }
 
-void testApp::updateProperties(int x, int y){
+void partisynth::updateProperties(int x, int y){
     
 	int width = ofGetWidth();
 	pan = (float)x / (float)width;
@@ -436,35 +432,29 @@ void testApp::updateProperties(int x, int y){
 }
 
 //--------------------------------------------------------------
-void testApp::setPhaseAdderTarget () {
+void partisynth::setPhaseAdderTarget () {
     phaseAdderTarget = (targetFrequency / (float) sampleRate) * TWO_PI;
 }
 
 //--------------------------------------------------------------
-void testApp::mouseDragged(int x, int y, int button){
+void partisynth::mouseDragged(int x, int y, int button){
 
     updateProperties(x, y);
 
 }
 
 //--------------------------------------------------------------
-void testApp::mousePressed(int x, int y, int button){
+void partisynth::mousePressed(int x, int y, int button){
 	bNoise = true;
 }
 
-
 //--------------------------------------------------------------
-void testApp::mouseReleased(int x, int y, int button){
+void partisynth::mouseReleased(int x, int y, int button){
 	bNoise = false;
 }
 
 //--------------------------------------------------------------
-void testApp::windowResized(int w, int h){
-
-}
-
-//--------------------------------------------------------------
-void testApp::audioOut(float * output, int bufferSize, int nChannels){
+void partisynth::audioOut(float * output, int bufferSize, int nChannels){
 	//pan = 0.5f;
 	float leftScale = 1 - pan;
 	float rightScale = pan;
@@ -552,20 +542,8 @@ void testApp::audioOut(float * output, int bufferSize, int nChannels){
             volumeAdjustment = volumeFrequencyAdjustment *  volumeWaveformAdjustment;
             output[i*nChannels    ] = lAudio[i] * volumeAdjustment;
             output[i*nChannels + 1] = rAudio[i] * volumeAdjustment;
-/*
-            output[i*nChannels    ] = lAudio[i] * 20.0f/targetFrequency; 
-            output[i*nChannels + 1] = rAudio[i] * 20.0f/targetFrequency;
-//*/
 		}
 	} 
 }
 
-//--------------------------------------------------------------
-void testApp::gotMessage(ofMessage msg){
-
-}
-
-//--------------------------------------------------------------
-void testApp::dragEvent(ofDragInfo dragInfo){ 
-
-}
+//*/

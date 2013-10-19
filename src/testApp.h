@@ -3,58 +3,11 @@
 #include "ofMain.h"
 #include "ofxXmlSettings.h"
 #include "ofxParticleEmitter.h"
-
-class partisynth {
-    void init();
-    void update();
-    void draw();
-    
-    void getAudioOut();
-    
-    void setPhaseAdderTarget();
-    void updateEmitters();
-    void updateProperties(int x, int y);
-    
-    ofSoundStream soundStream;
-    
-    bool    paused;
-    char    displayID; //TODO: used to be "screenID", needs to be updatedin class code
-    float 	pan;
-    int		sampleRate;
-    bool 	bNoise;    
-    float 	volume;
-    
-    vector <float> lAudio;
-    vector <float> rAudio;
-    
-    //------------------- for simple synthesizer
-    float 	targetFrequency;
-    float 	phase;
-    float 	phaseAdder;
-    float 	phaseAdderTarget;
-    
-    char    waveform;
-    float   phaseAdderTargetTween;
-    float   volumeWaveformAdjustment;
-    float   volumeFrequencyAdjustment;
-    float   volumeAdjustment;
-    
-    float height; //TODO: make these
-    float heightPct;
-protected:
-	
-	ofxParticleEmitter		m_emitter1, m_emitter2, m_emitter3, m_emitter4, m_emitter5;
-    vector <ofxParticleEmitter> emitters;
-    
-    // TODO: set this internally and create "get" function to use 
-    // colorBackgroundJitter in testApp 
-    ofColor     colorBackgroundJitter; 
-    
-};
+// #include "partisynth.h"
 
 class testApp : public ofBaseApp{
 public:
-
+    
     void setup();
     void update();
     void draw();
@@ -69,8 +22,12 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     
+    // TODO: partisynth-handling properties and functions need to be defined
+    
+    // TODO: can this be moved into partisynth object?
     void audioOut(float * input, int bufferSize, int nChannels);
     
+    // TODO: eventually remove pretty much everything from here on down
     void setPhaseAdderTarget();
     void updateEmitters();
     void updateProperties(int x, int y);
