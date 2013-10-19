@@ -1,4 +1,4 @@
-/*
+// /*
  
 #pragma once
 
@@ -6,17 +6,17 @@
 #include "ofxXmlSettings.h"
 #include "ofxParticleEmitter.h"
 
-class partisynth {
+class Partisynth {
 public:
     
     void    init();
     void    update();
     void    draw();
     
-    void mouseMoved(int x, int y );
-    void mouseDragged(int x, int y, int button);
-    void mousePressed(int x, int y, int button);
-    void mouseReleased(int x, int y, int button);
+    void    mouseMoved(int x, int y );
+    void    mouseDragged(int x, int y, int button);
+    void    mousePressed(int x, int y, int button);
+    void    mouseReleased(int x, int y, int button);
     
     void    updateEmitterPosition(int x, int y );
     // TODO: move debug & pause functionality into GUI    

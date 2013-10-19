@@ -3,7 +3,7 @@
 #include "ofMain.h"
 #include "ofxXmlSettings.h"
 #include "ofxParticleEmitter.h"
-// #include "partisynth.h"
+#include "partisynth.h"
 
 class testApp : public ofBaseApp{
 public:
@@ -23,6 +23,7 @@ public:
     void gotMessage(ofMessage msg);
     
     // TODO: partisynth-handling properties and functions need to be defined
+    vector <Partisynth> partisynths;
     
     // TODO: can this be moved into partisynth object?
     void audioOut(float * input, int bufferSize, int nChannels);

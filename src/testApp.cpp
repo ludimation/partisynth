@@ -4,12 +4,19 @@
 // - audioOutputExample source code
 // - James M's contributions: 1) working through math for linear tone/mouse relationship, and 2) square wave
 
-// TODO: 
+// TODO: continue building Partisynth object: init(), update(), draw()
 
 //--------------------------------------------------------------
 void testApp::setup(){
     
-    ofSetFrameRate( 60 );
+	ofSetFrameRate(60);
+    
+    // Partisynth creation and initialization
+    partisynths.clear();
+    Partisynth ps1;
+    partisynths.push_back(ps1);
+    // everything works up to here
+    //partisynths[1].init();
     
     emitters.clear();
     numEmitters = 3;
@@ -65,13 +72,8 @@ void testApp::setup(){
 	//soundStream.setDeviceID(1); 	//note some devices are input only and some are output only 
 
 	soundStream.setup(this, 2, 0, sampleRate, bufferSize, 4);
-
-	ofSetFrameRate(60);
     
     setPhaseAdderTarget();
-    
-    int x = ofGetWidth();
-    int y = ofGetHeight();
 }
 
 

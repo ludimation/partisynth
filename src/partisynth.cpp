@@ -1,4 +1,4 @@
-/*
+///*
 
 #include "partisynth.h"
 
@@ -10,7 +10,7 @@
 
 //--------------------------------------------------------------
 
-void partisynth::init(){
+void Partisynth::init(){
     
     ofSetFrameRate( 60 );
     
@@ -78,11 +78,11 @@ void partisynth::init(){
 }
 
 //--------------------------------------------------------------
-void partisynth::update(){
+void Partisynth::update(){
     updateEmitters();
 }
 
-void partisynth::updateEmitters(){
+void Partisynth::updateEmitters(){
     for (int i=0; i < emitters.size(); i++) {
         if (updateParticleTexture) {
             emitters[i].loadFromXml(xmlFilename);
@@ -128,8 +128,45 @@ void partisynth::updateEmitters(){
 
 }
 
+void Partisynth::updateProperties(){
+    
+    int x = ofGetMouseX();
+    int y = ofGetMouseY();
+    
+    // set default values so we don't get ridiculous pitches at start of program
+    if (!x && !y) {
+        int width = ofGetWidth();
+        float height = ofGetHeight();
+        x = width / 2.0f;
+        y = height / 2.0f;
+    }
+    
+    updateProperties(x, y);    
+}
+
+void Partisynth::updateProperties(int x, int y){
+    
+    int width = ofGetWidth();
+	float height = ofGetHeight();
+	pan = (float)x / (float)width;
+	heightPct = ((height-y) / height);
+    
+    // linear relationship between frequency and mouse Y
+    // targetFrequency = 2000.0f * heightPct); 
+    // exponential relationship between frequency and mouse Y
+    // TODO: could make this "snap" to chromatic scales
+	targetFrequency = 100.0f * pow(1.059463094359f, heightPct*75.0f); 
+    
+	setPhaseAdderTarget();
+    
+    for (int i=0; i < emitters.size(); i++) {
+        emitters[i].sourcePosition.x = x;
+        emitters[i].sourcePosition.y = y;
+    }
+}
+
 //--------------------------------------------------------------
-void partisynth::draw(){
+void Partisynth::draw(){
     
     string  screenLabel         = "PARTISYNTH";
     bool    screenShake         = false;
@@ -316,7 +353,7 @@ void partisynth::draw(){
 }
 
 //--------------------------------------------------------------
-void partisynth::keyPressed(int key){
+void Partisynth::keyPressed(int key){
 
     string  filename                    = "";
 
@@ -399,62 +436,36 @@ void partisynth::keyPressed(int key){
 }
 
 //--------------------------------------------------------------
-void partisynth::mouseMoved(int x, int y ){
+void Partisynth::mouseMoved(int x, int y ){
     
     updateProperties(x, y);
     
 }
 
-void partisynth::updateProperties(){
-    
-    updateProperties(ofGetMouseX(), ofGetMouseY());
-    
-}
-
-void partisynth::updateProperties(int x, int y){
-    
-	int width = ofGetWidth();
-	pan = (float)x / (float)width;
-	height = (float)ofGetHeight();
-	heightPct = ((height-y) / height);
-    // linear relationship between frequency and mouse Y
-    // targetFrequency = 2000.0f * heightPct); 
-    // exponential relationship between frequency and mouse Y
-    // TODO: could make this "snap" to chromatic scales
-	targetFrequency = 100.0f * pow(1.059463094359f, heightPct*75.0f); 
-    
-	setPhaseAdderTarget();
-    
-    for (int i=0; i < emitters.size(); i++) {
-        emitters[i].sourcePosition.x = x;
-        emitters[i].sourcePosition.y = y;
-    }
-}
-
 //--------------------------------------------------------------
-void partisynth::setPhaseAdderTarget () {
+void Partisynth::setPhaseAdderTarget () {
     phaseAdderTarget = (targetFrequency / (float) sampleRate) * TWO_PI;
 }
 
 //--------------------------------------------------------------
-void partisynth::mouseDragged(int x, int y, int button){
+void Partisynth::mouseDragged(int x, int y, int button){
 
     updateProperties(x, y);
 
 }
 
 //--------------------------------------------------------------
-void partisynth::mousePressed(int x, int y, int button){
+void Partisynth::mousePressed(int x, int y, int button){
 	bNoise = true;
 }
 
 //--------------------------------------------------------------
-void partisynth::mouseReleased(int x, int y, int button){
+void Partisynth::mouseReleased(int x, int y, int button){
 	bNoise = false;
 }
 
 //--------------------------------------------------------------
-void partisynth::audioOut(float * output, int bufferSize, int nChannels){
+void Partisynth::audioOut(float * output, int bufferSize, int nChannels){
 	//pan = 0.5f;
 	float leftScale = 1 - pan;
 	float rightScale = pan;
