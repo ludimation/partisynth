@@ -2,41 +2,24 @@
 
 #include "partisynth.h"
 
-// TODO: develop credits, including 
-// - audioOutputExample source code
-// - James M's contributions: 1) working through math for linear tone/mouse relationship, and 2) square wave
-
-// TODO: 
+// TODO: (longterm)
+// - develop credits, including:
+//      - audioOutputExample source code
+//      - James M's contributions: 
+//          1) working through math for linear tone/mouse relationship, and 
+//          2) square wave
+// - separate synth into an addon
 
 //--------------------------------------------------------------
 
 void Partisynth::init(){
     
-    ofSetFrameRate( 60 );
+    screenID                    = 'e';
+    numEmitters                 = 3;
+    updateParticleTexture       = false;
+    xmlFilename                 = "circles_subdued.pex";
+    texFilename                 = "0005_circle.png";
     
-    emitters.clear();
-    numEmitters = 3;
-    
-    for (int i=0; i < numEmitters; i++) {
-        ofxParticleEmitter emitter;
-        emitters.push_back(emitter);
-    }
-	
-    for (int i=0; i < emitters.size(); i++) {
-        if ( !emitters[i].loadFromXml( "circles_subdued.pex") )
-        {
-            ofLog( OF_LOG_ERROR, "testApp::setup() - failed to load emitter[" + ofToString(i) + "] config" );
-        }    
-    }
-    
-	// 2 output channels,
-	// 0 input channels
-	// 22050 samples per second
-	// 512 samples per buffer
-	// 4 num buffers (latency)
-	
-	int bufferSize              = 512;
-	sampleRate                  = 44100;
 	phase                       = 0;
 	phaseAdder                  = 0.0f;
 	phaseAdderTarget            = 0.0f;
@@ -51,30 +34,41 @@ void Partisynth::init(){
     volumeWaveformAdjustment    = 0.9995f; // will sort of not work if you assign any values >=1.0f
     volumeAdjustment            = volumeFrequencyAdjustment * volumeWaveformAdjustment;
     
-    updateParticleTexture       = true;
-    xmlFilename                 = "circles_subdued.pex";
-    texFilename                 = "0005_circle.png";
-    
-    screenID                    = 'e';
-    
     // ===============----
 
+	// 2 output channels,
+	// 0 input channels
+	// 22050 samples per second
+	// 512 samples per buffer
+	// 4 num buffers (latency)
+	int bufferSize              = 512;
+	sampleRate                  = 44100;
 	lAudio.assign(bufferSize, 0.0);
 	rAudio.assign(bufferSize, 0.0);
 	
-	//soundStream.listDevices();
-	
-	//if you want to set the device id to be different than the default
-	//soundStream.setDeviceID(1); 	//note some devices are input only and some are output only 
-
+    // TODO: trouble-shoot soundstream — was acting funny
 	// soundStream.setup(this, 2, 0, sampleRate, bufferSize, 4);
 
-	ofSetFrameRate(60);
+    // NOTES:
+    //soundStream.listDevices();
+	//if you want to set the device id to be different than the default
+	//soundStream.setDeviceID(1); 	//note some devices are input only and some are output only 
     
+    // populate emitter array
+    emitters.clear();
+    for (int i=0; i < numEmitters; i++) {
+        ofxParticleEmitter emitter;
+        emitters.push_back(emitter);
+    }
+    // load emitter settings from saved ".pex" file
+    for (int i=0; i < emitters.size(); i++) {
+        if ( !emitters[i].loadFromXml( xmlFilename ) )
+        {
+            ofLog( OF_LOG_ERROR, "testApp::setup() - failed to load emitter[" + ofToString(i) + "] config" );
+        }    
+    }
+
     setPhaseAdderTarget();
-    
-    int x = ofGetWidth();
-    int y = ofGetHeight();
 }
 
 //--------------------------------------------------------------
@@ -87,8 +81,6 @@ void Partisynth::updateEmitters(){
         if (updateParticleTexture) {
             emitters[i].loadFromXml(xmlFilename);
             updateProperties();
-            // emitters[i].maxParticles = 3000;
-            // emitters[i].changeTexture(filename);
         }
         
         if (paused != emitters[i].paused) {
@@ -163,6 +155,104 @@ void Partisynth::updateProperties(int x, int y){
         emitters[i].sourcePosition.x = x;
         emitters[i].sourcePosition.y = y;
     }
+}
+
+//--------------------------------------------------------------
+void Partisynth::setPhaseAdderTarget () {
+    phaseAdderTarget = (targetFrequency / (float) sampleRate) * TWO_PI;
+}
+
+//--------------------------------------------------------------
+void Partisynth::audioOut(float * output, int bufferSize, int nChannels){
+	//pan = 0.5f;
+	float leftScale = 1 - pan;
+	float rightScale = pan;
+    
+	// sin (n) seems to have trouble when n is very large, so we
+	// keep phase in the range of 0-TWO_PI like this:
+	while (phase > TWO_PI){
+		phase -= TWO_PI;
+	}
+    
+	if ( bNoise == true){
+		// ---------------------- noise --------------
+		for (int i = 0; i < bufferSize; i++){
+            volumeWaveformAdjustment = 0.10f;
+			lAudio[i] = ofRandom(-1, 1) * volume * leftScale;
+			rAudio[i] = ofRandom(-1, 1) * volume * rightScale;
+            output[i*nChannels    ] = lAudio[i] * volumeWaveformAdjustment; 
+            output[i*nChannels + 1] = rAudio[i] * volumeWaveformAdjustment;
+		}
+	} 
+    else {
+        // smooth frequency changes
+		phaseAdder = phaseAdderTargetTween * phaseAdder + (1-phaseAdderTargetTween) * phaseAdderTarget; 
+		// phaseAdder = phaseAdderTarget; // no smoothing between frequency changes
+		for (int i = 0; i < bufferSize; i++){
+			phase += phaseAdder;
+            
+            float sample;
+            
+            // sometimes we only care about phase in terms of a percentage of TWO_PI
+            float phaseClamped = phase;
+            while (phaseClamped > TWO_PI){
+                phaseClamped -= TWO_PI;
+            }
+            float pct = phaseClamped / TWO_PI;
+            // sometimes you wan to mutlitpy in negative for first half of phase
+            float multiplier;
+            multiplier = (pct < 0.5f) ? 1.0f : -1.0f;
+            
+            //TODO: Make this waveform generator into an addon
+            //      - make attenuation better than this?
+            
+            switch (waveform) {
+                    
+                case 't': // triangle wave /\/\/\/\/
+                    pct -= (pct>0.5f) ? 0.5f : 0.0f;
+                    sample = multiplier * (2.0f * (pct*2.0f) -1.0f);
+                    volumeWaveformAdjustment = 0.40f;
+                    break;
+                    
+                case 'i': // irregular triangle wave /\/\/\/\/ but wierder, looks like an actual saw blade
+                    pct += (pct<0.5f) ? 0.5f : 0.0f;
+                    sample = multiplier * (2.0f * pct -1.0f);
+                    volumeWaveformAdjustment = 0.35f;
+                    break;
+                    
+                case 'w' : // sawtooth wave "////////////"
+                    sample = 2.0f * pct -1.0f;
+                    volumeWaveformAdjustment = 0.225f;
+                    break;
+                    
+                case 'W': // sawtooth wave "\\\\\\\\\\\\\\"
+                    sample = -1 * (2.0f * pct -1.0f);
+                    volumeWaveformAdjustment = 0.225f;
+                    break;
+                    
+                case 'q': 
+                    // square wave
+                    sample = (sin(phase) > 0) ? 1 : -1;
+                    volumeWaveformAdjustment = 0.175f;
+                    break;
+                    
+                case 's': // sine wave (default)
+                default:
+                    sample = sin(phase);
+                    volumeWaveformAdjustment = 0.9995f;
+                    break;
+            }
+            
+			lAudio[i] = sample * volume * leftScale;
+			rAudio[i] = sample * volume * rightScale;
+            // Adjust ouput volume based on both target frequency and waveform
+            volumeWaveformAdjustment = 1.0f - ( (1.0f - volumeWaveformAdjustment) / (1.0f + (100.0f * heightPct)) );
+            volumeFrequencyAdjustment = 0.1f + pow(0.9f, targetFrequency/1000.0f);
+            volumeAdjustment = volumeFrequencyAdjustment *  volumeWaveformAdjustment;
+            output[i*nChannels    ] = lAudio[i] * volumeAdjustment;
+            output[i*nChannels + 1] = rAudio[i] * volumeAdjustment;
+		}
+	} 
 }
 
 //--------------------------------------------------------------
@@ -443,11 +533,6 @@ void Partisynth::mouseMoved(int x, int y ){
 }
 
 //--------------------------------------------------------------
-void Partisynth::setPhaseAdderTarget () {
-    phaseAdderTarget = (targetFrequency / (float) sampleRate) * TWO_PI;
-}
-
-//--------------------------------------------------------------
 void Partisynth::mouseDragged(int x, int y, int button){
 
     updateProperties(x, y);
@@ -462,99 +547,6 @@ void Partisynth::mousePressed(int x, int y, int button){
 //--------------------------------------------------------------
 void Partisynth::mouseReleased(int x, int y, int button){
 	bNoise = false;
-}
-
-//--------------------------------------------------------------
-void Partisynth::audioOut(float * output, int bufferSize, int nChannels){
-	//pan = 0.5f;
-	float leftScale = 1 - pan;
-	float rightScale = pan;
-
-	// sin (n) seems to have trouble when n is very large, so we
-	// keep phase in the range of 0-TWO_PI like this:
-	while (phase > TWO_PI){
-		phase -= TWO_PI;
-	}
-
-	if ( bNoise == true){
-		// ---------------------- noise --------------
-		for (int i = 0; i < bufferSize; i++){
-            volumeWaveformAdjustment = 0.10f;
-			lAudio[i] = ofRandom(-1, 1) * volume * leftScale;
-			rAudio[i] = ofRandom(-1, 1) * volume * rightScale;
-            output[i*nChannels    ] = lAudio[i] * volumeWaveformAdjustment; 
-            output[i*nChannels + 1] = rAudio[i] * volumeWaveformAdjustment;
-		}
-	} 
-    else {
-        // smooth frequency changes
-		phaseAdder = phaseAdderTargetTween * phaseAdder + (1-phaseAdderTargetTween) * phaseAdderTarget; 
-		// phaseAdder = phaseAdderTarget; // no smoothing between frequency changes
-		for (int i = 0; i < bufferSize; i++){
-			phase += phaseAdder;
-            
-            float sample;
-            
-            // sometimes we only care about phase in terms of a percentage of TWO_PI
-            float phaseClamped = phase;
-            while (phaseClamped > TWO_PI){
-                phaseClamped -= TWO_PI;
-            }
-            float pct = phaseClamped / TWO_PI;
-            // sometimes you wan to mutlitpy in negative for first half of phase
-            float multiplier;
-            multiplier = (pct < 0.5f) ? 1.0f : -1.0f;
-            
-            //TODO: Make this waveform generator into an addon
-            //      - make attenuation better than this?
-            
-            switch (waveform) {
-                    
-                case 't': // triangle wave /\/\/\/\/
-                    pct -= (pct>0.5f) ? 0.5f : 0.0f;
-                    sample = multiplier * (2.0f * (pct*2.0f) -1.0f);
-                    volumeWaveformAdjustment = 0.40f;
-                    break;
-                    
-                case 'i': // irregular triangle wave /\/\/\/\/ but wierder, looks like an actual saw blade
-                    pct += (pct<0.5f) ? 0.5f : 0.0f;
-                    sample = multiplier * (2.0f * pct -1.0f);
-                    volumeWaveformAdjustment = 0.35f;
-                    break;
-                    
-                case 'w' : // sawtooth wave "////////////"
-                    sample = 2.0f * pct -1.0f;
-                    volumeWaveformAdjustment = 0.225f;
-                    break;
-                    
-                case 'W': // sawtooth wave "\\\\\\\\\\\\\\"
-                    sample = -1 * (2.0f * pct -1.0f);
-                    volumeWaveformAdjustment = 0.225f;
-                    break;
-                    
-                case 'q': 
-                    // square wave
-                    sample = (sin(phase) > 0) ? 1 : -1;
-                    volumeWaveformAdjustment = 0.175f;
-                    break;
-                    
-                case 's': // sine wave (default)
-                default:
-                    sample = sin(phase);
-                    volumeWaveformAdjustment = 0.9995f;
-                    break;
-            }
-            
-			lAudio[i] = sample * volume * leftScale;
-			rAudio[i] = sample * volume * rightScale;
-            // Adjust ouput volume based on both target frequency and waveform
-            volumeWaveformAdjustment = 1.0f - ( (1.0f - volumeWaveformAdjustment) / (1.0f + (100.0f * heightPct)) );
-            volumeFrequencyAdjustment = 0.1f + pow(0.9f, targetFrequency/1000.0f);
-            volumeAdjustment = volumeFrequencyAdjustment *  volumeWaveformAdjustment;
-            output[i*nChannels    ] = lAudio[i] * volumeAdjustment;
-            output[i*nChannels + 1] = rAudio[i] * volumeAdjustment;
-		}
-	} 
 }
 
 //*/
