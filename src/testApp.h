@@ -74,6 +74,7 @@ public:
     void setPhaseAdderTarget();
     void updateEmitters();
     void updateProperties(int x, int y);
+    void updateProperties();
     
     ofSoundStream soundStream;
 
@@ -85,12 +86,15 @@ public:
     vector <float> lAudio;
     vector <float> rAudio;
     
-    //------------------- for the simple sine wave synthesis
+    //------------------- for the wave synthesis
     float 	targetFrequency;
     float 	phase;
     float 	phaseAdder;
     float 	phaseAdderTarget;
     
+    bool    updateParticleTexture;
+    string  xmlFilename;
+    string  texFilename;
     bool paused;
     char waveform;
     char screenID;
@@ -103,6 +107,6 @@ public:
     float heightPct;
 protected:
 	
-	ofxParticleEmitter		m_emitter1, m_emitter2, m_emitter3, m_emitter4, m_emitter5;
+    int                         numEmitters;
     vector <ofxParticleEmitter> emitters;
 };

@@ -1,5 +1,5 @@
 <particleEmitterConfig>
-    <texture name="0005_circle.png"></texture>
+    <texture name="0000_sawtooth_reversed.png"></texture>
     <sourcePosition x="512.000000000" y="378.000000000"></sourcePosition>
     <sourcePositionVariance x="7.000000000" y="7.000000000"></sourcePositionVariance>
     <speed value="215.000000000"></speed>

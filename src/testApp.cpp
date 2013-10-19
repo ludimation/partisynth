@@ -12,11 +12,12 @@ void testApp::setup(){
     ofSetFrameRate( 60 );
     
     emitters.clear();
-    emitters.push_back(m_emitter1);
-    emitters.push_back(m_emitter2);
-    emitters.push_back(m_emitter3);
-    //emitters.push_back(m_emitter4);
-    //emitters.push_back(m_emitter5);
+    numEmitters = 3;
+    
+    for (int i=0; i < numEmitters; i++) {
+        ofxParticleEmitter emitter;
+        emitters.push_back(emitter);
+    }
 	
     for (int i=0; i < emitters.size(); i++) {
         if ( !emitters[i].loadFromXml( "circles_subdued.pex"/*"drugs_subdued.pex"*/ ) )
@@ -47,6 +48,10 @@ void testApp::setup(){
     volumeWaveformAdjustment    = 0.9995f; // will sort of not work if you assign any values >=1.0f
     volumeAdjustment            = volumeFrequencyAdjustment * volumeWaveformAdjustment;
     
+    updateParticleTexture       = true;
+    xmlFilename                 = "circles_subdued.pex";
+    texFilename                 = "0005_circle.png";
+    
     screenID                    = 'e';
     
     // ===============----
@@ -67,23 +72,27 @@ void testApp::setup(){
     
     int x = ofGetWidth();
     int y = ofGetHeight();
-    
-    // updateProperties(x, y);
-    
-    // updateEmitters();
-
 }
 
 
 //--------------------------------------------------------------
 void testApp::update(){
-    
     updateEmitters();
-    
 }
 
 void testApp::updateEmitters(){
     for (int i=0; i < emitters.size(); i++) {
+        if (updateParticleTexture) {
+            emitters[i].loadFromXml(xmlFilename);
+            updateProperties();
+            // emitters[i].maxParticles = 3000;
+            // emitters[i].changeTexture(filename);
+        }
+        
+        if (paused != emitters[i].paused) {
+            emitters[i].pause();
+        }
+
         // particle emission angle rotates according to sample volume
         emitters[i].angle = (360/emitters.size()*2) * (lAudio[0] + rAudio[0] + 1.0f) * volumeAdjustment + i * (360 / emitters.size());
         // make colors more eratic as pitch increases
@@ -101,12 +110,20 @@ void testApp::updateEmitters(){
         emitters[i].startParticleSizeVariance = 0.0f; // 20 + (1-heightPct)  * 60.0f;
         emitters[i].finishParticleSize = 1 + heightPct  * 60.0f;
         emitters[i].finishParticleSizeVariance = 0.0f; // 20 + (1-heightPct)  * 60.0f;
-        emitters[i].speed = 50 + heightPct * 10000.0f * volume;
-        emitters[i].particleLifespan = MIN( 0.5f + 1.0f / emitters[i].speed, 2.5f);
-        emitters[i].update();
+        emitters[i].speed = 40 + heightPct * 5000.0f * volume;
+        emitters[i].speedVariance = 0.0f;
+        emitters[i].particleLifespan = MIN( 0.5f + 100.0f / emitters[i].speed, 30.0f);
         
         // TODO: update more emitter properties based on waveform (texture shape), and other properties    
+        
+        
+        emitters[i].update();
     }
+    
+    if (updateParticleTexture) {
+        updateParticleTexture = false;
+    }
+
 }
 
 //--------------------------------------------------------------
@@ -128,8 +145,10 @@ void testApp::draw(){
         
         case 'e': // emitter screen
             screenLabel         += ": emitter screen";
-            screenFlicker       = true;
-            screenShake         = true;
+            if (!paused) {
+                screenFlicker       = true;
+                screenShake         = true;
+            }
             drawEmitter         = true;
             drawInstructions    = true;
             // drawReport          = true;
@@ -297,7 +316,10 @@ void testApp::draw(){
 
 //--------------------------------------------------------------
 void testApp::keyPressed  (int key){
-	if (key == '-' || key == '_' ){
+
+    string  filename                    = "";
+
+    if (key == '-' || key == '_' ){
 		volume -= 0.05;
 		volume = MAX(volume, 0);
 	} 
@@ -325,16 +347,41 @@ void testApp::keyPressed  (int key){
             break;
             
         case 't': // triangle
+            xmlFilename = "triangles_subdued.pex";
+            texFilename = "0003_triangle.png";
+            updateParticleTexture = true;
+            break;
         case 'i': // irregular triangle
+            xmlFilename = "trianglesIrregular_subdued.pex";
+            texFilename = "0002_triangle_irregular.png";
+            updateParticleTexture = true;
+            break;
         case 'w': // sawtooth
+            xmlFilename = "sawtooth_subdued.pex";
+            texFilename = "0001_sawtooth.png";
+            updateParticleTexture = true;
+            break;
         case 'W': // sawtooth reversed
+            xmlFilename = "sawtooth_reversed_subdued.pex";
+            texFilename = "0000_sawtooth_reversed.png";
+            updateParticleTexture = true;
+            break;
         case 'q': // square
+            xmlFilename = "squares_subdued.pex";
+            texFilename = "0004_square.png";
+            updateParticleTexture = true;
+            break;
         case 's': // sine
-            waveform = key;
+            xmlFilename = "circles_subdued.pex";
+            texFilename = "0005_circle.png";
+            updateParticleTexture = true;
             break;
         default:
             //TODO: some key input message here?
             break;
+    }
+    if (updateParticleTexture) {
+        waveform = key;        
     }
     
     // modify frequency smoothing
@@ -359,6 +406,12 @@ void testApp::keyReleased  (int key){
 void testApp::mouseMoved(int x, int y ){
     
     updateProperties(x, y);
+    
+}
+
+void testApp::testApp::updateProperties(){
+    
+    updateProperties(ofGetMouseX(), ofGetMouseY());
     
 }
 
