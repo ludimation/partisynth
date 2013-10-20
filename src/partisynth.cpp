@@ -9,6 +9,7 @@
 //          1) working through math for linear tone/mouse relationship, and 
 //          2) square wave
 // - separate synth into an addon
+// - create functionality to put debug reports into a GUI (to be called from main app) so that all partisynth properties can be read/accessed, etc
 
 //--------------------------------------------------------------
 
@@ -24,7 +25,7 @@ Partisynth::Partisynth(){
 	phase                       = 0;
 	phaseAdder                  = 0.0f;
 	phaseAdderTarget            = 0.0f;
-    phaseAdderTargetTween       = 0.5f;
+    phaseAdderTargetTween       = 0.9f;
 	volume                      = 1.0f;
 	bNoise                      = false;
     paused                      = false;
@@ -109,6 +110,7 @@ void Partisynth::init(float multiplier){
     }
 
     setPhaseAdderTarget();
+    updateProperties();
 //*/
 }
 
@@ -131,7 +133,7 @@ void Partisynth::updateEmitters(){
         }
 
         // particle emission angle rotates according to sample volume
-        emitters[i].angle = (360/emitters.size()*2) * (lAudio[0] + rAudio[0] + 1.0f) * volumeAdjustment + i * (360 / emitters.size());
+        emitters[i].angle = (360/emitters.size()*2) * (lAudio[0] + rAudio[0] + 1.0f) + i * (360 / emitters.size());
         // make colors more eratic as pitch increases
         emitters[i].startColor.red = targetFrequency / 10000.0f;
         emitters[i].startColorVariance.red = heightPct/2;
@@ -143,11 +145,11 @@ void Partisynth::updateEmitters(){
         emitters[i].finishColor.green   = 0.0f;
         emitters[i].finishColor.blue    = 0.0f;
         emitters[i].finishColor.alpha   = 0.0f;
-        emitters[i].startParticleSize = 10 / (1.05f-volume) + (1-heightPct) * 30.0f * sizeAdjustment;
+        emitters[i].startParticleSize = 0.5f / (1.05f-volume) + (heightPct) * 60.0f * sizeAdjustment;
         emitters[i].startParticleSizeVariance = 0.0f; // 20 + (1-heightPct)  * 60.0f;
-        emitters[i].finishParticleSize = 1 + heightPct * 60.0f *sizeAdjustment;
+        emitters[i].finishParticleSize = (1-heightPct) * 120.0f * sizeAdjustment;
         emitters[i].finishParticleSizeVariance = 0.0f; // 20 + (1-heightPct)  * 60.0f;
-        emitters[i].speed = 40 + heightPct * 2500.0f * volume *sizeAdjustment;
+        emitters[i].speed = 40 + heightPct * 2500.0f * volume * sizeAdjustment;
         emitters[i].speedVariance = 0.0f;
         emitters[i].particleLifespan = MIN( 0.5f + 100.0f / emitters[i].speed, 30.0f);
         
@@ -168,34 +170,33 @@ void Partisynth::updateProperties(){
     int x = ofGetMouseX();
     int y = ofGetMouseY();
     
-    // set default values so we don't get ridiculous pitches at start of program
-    if (!x && !y) {
-        int width = ofGetWidth();
-        float height = ofGetHeight();
-        x = width / 2.0f;
-        y = height / 2.0f;
-    }
-    
     updateProperties(x, y);    
 }
 
 void Partisynth::updateProperties(int x, int y){
     
-    
     int width = ofGetWidth();
 	float height = ofGetHeight();
 
+    // set default values so we don't get ridiculous pitches at start of program
+    if (!x && !y) {
+        x = width / 2.0f;
+        y = height / 2.0f;
+    }
+    
     // application can crash if you try to set things to move
     // to values less than zero and 
-    if (x < 0)
+    if (x < 0){
         x = 0;
-    else if (x > width)
+    } else if (x > width) {
         x = width;
-    if (y < 0)
+    }
+    if (y < 0) {
         y = 0;
-    else if (y > height)
+    } else if (y > height) {
         y = height;
-    
+    }
+        
     pan = (float)x / (float)width;
 	heightPct = ((height-y) / height);
     
@@ -233,11 +234,11 @@ void Partisynth::audioOut(float * output, int bufferSize, int nChannels){
 	if ( bNoise == true){
 		// ---------------------- noise --------------
 		for (int i = 0; i < bufferSize; i++){
-            volumeWaveformAdjustment = 0.10f;
+            volumeWaveformAdjustment = 0.30f;
 			lAudio[i] = ofRandom(-1, 1) * volume * leftScale;
 			rAudio[i] = ofRandom(-1, 1) * volume * rightScale;
-            output[i*nChannels    ] = lAudio[i] * volumeWaveformAdjustment; 
-            output[i*nChannels + 1] = rAudio[i] * volumeWaveformAdjustment;
+            output[i*nChannels    ] += lAudio[i] * volumeWaveformAdjustment * sizeAdjustment; 
+            output[i*nChannels + 1] += rAudio[i] * volumeWaveformAdjustment * sizeAdjustment;
 		}
 	} 
     else {
@@ -267,29 +268,29 @@ void Partisynth::audioOut(float * output, int bufferSize, int nChannels){
                 case 't': // triangle wave /\/\/\/\/
                     pct -= (pct>0.5f) ? 0.5f : 0.0f;
                     sample = multiplier * (2.0f * (pct*2.0f) -1.0f);
-                    volumeWaveformAdjustment = 0.40f;
+                    volumeWaveformAdjustment = 0.400f;
                     break;
                     
                 case 'i': // irregular triangle wave /\/\/\/\/ but wierder, looks like an actual saw blade
                     pct += (pct<0.5f) ? 0.5f : 0.0f;
                     sample = multiplier * (2.0f * pct -1.0f);
-                    volumeWaveformAdjustment = 0.35f;
+                    volumeWaveformAdjustment = 0.200f;
                     break;
                     
                 case 'w' : // sawtooth wave "////////////"
                     sample = 2.0f * pct -1.0f;
-                    volumeWaveformAdjustment = 0.225f;
+                    volumeWaveformAdjustment = 0.125f;
                     break;
                     
                 case 'W': // sawtooth wave "\\\\\\\\\\\\\\"
                     sample = -1 * (2.0f * pct -1.0f);
-                    volumeWaveformAdjustment = 0.225f;
+                    volumeWaveformAdjustment = 0.125f;
                     break;
                     
                 case 'q': 
                     // square wave
                     sample = (sin(phase) > 0) ? 1 : -1;
-                    volumeWaveformAdjustment = 0.175f;
+                    volumeWaveformAdjustment = 0.050f;
                     break;
                     
                 case 's': // sine wave (default)
@@ -302,11 +303,11 @@ void Partisynth::audioOut(float * output, int bufferSize, int nChannels){
 			lAudio[i] = sample * volume * leftScale;
 			rAudio[i] = sample * volume * rightScale;
             // Adjust ouput volume based on both target frequency and waveform
-            volumeWaveformAdjustment = 1.0f - ( (1.0f - volumeWaveformAdjustment) / (1.0f + (100.0f * heightPct)) );
-            volumeFrequencyAdjustment = 0.1f + pow(0.9f, targetFrequency/1000.0f);
+            volumeWaveformAdjustment = 1.0f - ( (1.0f - volumeWaveformAdjustment) / (1.0f + heightPct));
+            volumeFrequencyAdjustment = 0.0001f + pow(0.9f, targetFrequency/250.0f);
             volumeAdjustment = volumeFrequencyAdjustment *  volumeWaveformAdjustment;
-            output[i*nChannels    ] = lAudio[i] * volumeAdjustment;
-            output[i*nChannels + 1] = rAudio[i] * volumeAdjustment;
+            output[i*nChannels    ] += lAudio[i] * volumeAdjustment * sqrt(sizeAdjustment); 
+            output[i*nChannels + 1] += rAudio[i] * volumeAdjustment * sqrt(sizeAdjustment);
 		}
 	} 
 }
@@ -329,7 +330,7 @@ void Partisynth::draw(){
     switch (screenID) {
         
         case 'e': // emitter screen
-            screenLabel         += ": emitter screen";
+            //screenLabel         += ": emitter screen";
             if (!paused) {
                 // screenFlicker       = true; // TODO: make these be handled externally
                 // screenShake         = true;
@@ -341,10 +342,10 @@ void Partisynth::draw(){
        
         case 'd': // debug screen
         default: // modified from original audioOutputExample application
-            screenLabel += ": debug screen";
+            //screenLabel += ": debug screen";
             drawWaveforms = true;
-            drawEmitter = true;
-            drawInstructions = true;
+            //drawEmitter = true;
+            //drawInstructions = true;
             drawReport = true;
             break;
     }
