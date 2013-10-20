@@ -4,8 +4,12 @@
 // - audioOutputExample source code
 // - James M's contributions: 1) working through math for linear tone/mouse relationship, and 2) square wave
 
-// TODO: continue building Partisynth object: init() > has soundstream issues
-// - aggregate audio, screenshake, and screenflicker into main app
+// TODO:
+// - debug elaphantitis of 8th particle system (being huge when it shouldn't be)
+// - clean remnants of Partisynth code out from testApp since it no longer synthesizes anything or has any particles
+// - kinput > use kinetic data to drive partisynth pan (x), pitch (y), and volume (z)
+// - aggregate screenshake, and screenflicker into main app so that any user can affect it
+// - init() > has soundstream issues > should make this into a global "setup" function that can be called from testApp instead of having to be inside testApp so it can be packaged with "synth" when I make that into an addon
 
 //--------------------------------------------------------------
 void testApp::setup(){
@@ -95,11 +99,11 @@ void testApp::setup(){
 void testApp::update(){
     
     ///*
-    cout << "====" << endl;
-    cout << "== update() ==" << endl;
     
     if (updatePartisynths > 0 ) {
-        cout << "increasePartisyths = true" << endl;
+        cout << "====" << endl;
+        cout << "== update() ==" << endl;
+        cout << "updatePartisynths = 1" << endl;
         cout << "numPartisynths = " << numPartisynths << endl;
         cout << "partisynths.size() = " << partisynths.size() << endl;
 
@@ -118,28 +122,29 @@ void testApp::update(){
             cout << "incrementing: numPartisynths " << endl;
             numPartisynths++;
             cout << "numPartisynths = " << numPartisynths << endl;
-            float sizeAdjustment = 1.0f / (float)numPartisynths;
-            for (int i=0; i<numPartisynths; i++){
-                partisynths[i].sizeAdjustment = 2* pow(sizeAdjustment, 2);
-            }
-            updateProperties();
+            cout << "====" << endl;
+            
+            updateSizeAdustments();
         }
         updatePartisynths = 0;
     } else if (updatePartisynths < 0){
         if (numPartisynths > 1) {
+            cout << "====" << endl;
+            cout << "== update() ==" << endl;
+            cout << "updatePartisynths = -1" << endl;
+            cout << "numPartisynths = " << numPartisynths << endl;
+            cout << "partisynths.size() = " << partisynths.size() << endl;
+
             cout << "decrementing: numPartisynths " << endl;
             numPartisynths--;
             cout << "numPartisynths = " << numPartisynths << endl;
             // partisynths[numPartisynths].exit();
-            float sizeAdjustment = 1.0f / (float)numPartisynths;
-            for (int i=0; i<numPartisynths; i++){
-                partisynths[i].sizeAdjustment = 2* pow(sizeAdjustment, 2);
-            }
-            updateProperties();
+            cout << "====" << endl;
+
+            updateSizeAdustments();
         }
         updatePartisynths = 0;
     }
-    cout << "====" << endl;
     //*/
 
     
@@ -152,7 +157,35 @@ void testApp::update(){
         }
     }
     
+    // Partisynth mouse moved calls
+    for (int i=0; i < numPartisynths; i++) {
+        int x = ofGetMouseX();
+        int y = ofGetMouseY();
+        // set default values so partisynths don't get stuck in the upper left of the screen
+        if (!x && !y) {
+            x = ofGetWidth() / 2.0f;
+            y = ofGetHeight() / 2.0f;
+        }
+        float rps = 1.0f / (i+1);
+        float seconds = ofGetElapsedTimeMillis() / 1000.0f; // TODO: should eventually use beats to relate this to music more instead of seconds
+        float radians = TWO_PI * seconds * rps; 
+        partisynths[i].mouseMoved(x + 100 * i * sin(radians), y + 100 * i * cos(radians));
+    }
+    
     updateEmitters();
+}
+
+void testApp::updateSizeAdustments(){
+    float sizeAdjustment = sqrt(sqrt(1.0f / (float)numPartisynths));
+    cout << "====" << endl;
+    cout << "updateSizeAdustments(): sizeAdjustment = " << sizeAdjustment << endl;
+    for (int i=0; i<partisynths.size(); i++){
+        // partisynths[i].sizeAdjustment = (numPartisynths - i) * pow(sizeAdjustment, i+1);
+        partisynths[i].sizeAdjustment = sizeAdjustment / (i+1);
+        cout << "calculating partisynths["<<i<<"].sizeAdjustment = " << partisynths[i].sizeAdjustment << endl;
+    }
+    updateProperties();
+    cout << "====" << endl;
 }
 
 void testApp::updateEmitters(){
@@ -205,28 +238,22 @@ void testApp::updateProperties(){
 
     int x = ofGetMouseX();
     int y = ofGetMouseY();
-    
-    // set default values so we don't get ridiculous pitches at start of program
-    if (!x && !y) {
-        int width = ofGetWidth();
-        float height = ofGetHeight();
-        x = width / 2.0f;
-        y = height / 2.0f;
-    }
 
     updateProperties(x, y);    
 }
 
 void testApp::updateProperties(int x, int y){
     
-    // Partisynth mouse moved calls
-    for (int i=0; i < numPartisynths; i++) {
-        partisynths[i].mouseMoved(x + 100 * i * sin(i), y + 100 * i * cos(i));
-    }
-    
     int width = ofGetWidth();
 	float height = ofGetHeight();
-	pan = (float)x / (float)width;
+
+    // set default values so we don't get ridiculous pitches at start of program
+    if (!x && !y) {
+        x = width / 2.0f;
+        y = height / 2.0f;
+    }
+    
+    pan = (float)x / (float)width;
 	heightPct = ((height-y) / height);
 
     // linear relationship between frequency and mouse Y
@@ -275,10 +302,10 @@ void testApp::draw(){
         case 'd': // debug screen
         default: // modified from original audioOutputExample application
             screenLabel += ": debug screen";
-            drawWaveforms = true;
+            // drawWaveforms = true;
             drawEmitter = true;
             drawInstructions = true;
-            drawReport = true;
+            // drawReport = true;
             break;
     }
 
@@ -442,7 +469,8 @@ void testApp::draw(){
 //--------------------------------------------------------------
 void testApp::keyPressed  (int key){
     
-    for (int i = 0; i < numPartisynths; i++){
+    for (int i = 0; i < partisynths.size(); i++){ 
+        // keyPressed event needs to be passed to all partisynths so waveformes remain consistent
         partisynths[i].keyPressed(key);
     }
 
@@ -576,12 +604,22 @@ void testApp::mousePressed(int x, int y, int button){
             updatePartisynths = -1;
             break;
     }
+    
+    // hand event down to active particles so they get mouse pressed functions
+    for (int i = 0; i < partisynths.size(); i++) {
+        partisynths[i].mousePressed(x, y, button);
+    }
 }
 
 
 //--------------------------------------------------------------
 void testApp::mouseReleased(int x, int y, int button){
 	bNoise = false;
+
+    // hand event down to active particles so they get mouse pressed functions
+    for (int i = 0; i < partisynths.size(); i++) {
+        partisynths[i].mouseReleased(x, y, button);
+    }
 }
 
 //--------------------------------------------------------------
@@ -592,106 +630,16 @@ void testApp::windowResized(int w, int h){
 //--------------------------------------------------------------
 void testApp::audioOut(float * output, int bufferSize, int nChannels){
     
-    // Partisynth oudioOut calls
+    // clear audio buffers
+    for (int i = 0; i < bufferSize; i++){
+        output[i*nChannels    ] = 0; 
+        output[i*nChannels + 1] = 0;
+    }
+
+    // have partisynths write their audio to the buffer
     for (int i=0; i < numPartisynths; i++) {
         partisynths[i].audioOut(output, bufferSize, nChannels); 
-        // TODO: add arguments for relative volume
-        // - clear audio buffers?
     }
-    
-	//pan = 0.5f;
-	float leftScale = 1 - pan;
-	float rightScale = pan;
-
-	// sin (n) seems to have trouble when n is very large, so we
-	// keep phase in the range of 0-TWO_PI like this:
-	while (phase > TWO_PI){
-		phase -= TWO_PI;
-	}
-
-	if ( bNoise == true){
-		// ---------------------- noise --------------
-		for (int i = 0; i < bufferSize; i++){
-            volumeWaveformAdjustment = 0.10f;
-			lAudio[i] = ofRandom(-1, 1) * volume * leftScale;
-			rAudio[i] = ofRandom(-1, 1) * volume * rightScale;
-            output[i*nChannels    ] = lAudio[i] * volumeWaveformAdjustment; 
-            output[i*nChannels + 1] = rAudio[i] * volumeWaveformAdjustment;
-		}
-	} 
-    else {
-        // smooth frequency changes
-		phaseAdder = phaseAdderTargetTween * phaseAdder + (1-phaseAdderTargetTween) * phaseAdderTarget; 
-		// phaseAdder = phaseAdderTarget; // no smoothing between frequency changes
-		for (int i = 0; i < bufferSize; i++){
-			phase += phaseAdder;
-            
-            float sample;
-            
-            // sometimes we only care about phase in terms of a percentage of TWO_PI
-            float phaseClamped = phase;
-            while (phaseClamped > TWO_PI){
-                phaseClamped -= TWO_PI;
-            }
-            float pct = phaseClamped / TWO_PI;
-            // sometimes you wan to mutlitpy in negative for first half of phase
-            float multiplier;
-            multiplier = (pct < 0.5f) ? 1.0f : -1.0f;
-            
-            //TODO: Make this waveform generator into an addon
-            //      - make attenuation better than this?
-            
-            switch (waveform) {
-                    
-                case 't': // triangle wave /\/\/\/\/
-                    pct -= (pct>0.5f) ? 0.5f : 0.0f;
-                    sample = multiplier * (2.0f * (pct*2.0f) -1.0f);
-                    volumeWaveformAdjustment = 0.40f;
-                    break;
-                    
-                case 'i': // irregular triangle wave /\/\/\/\/ but wierder, looks like an actual saw blade
-                    pct += (pct<0.5f) ? 0.5f : 0.0f;
-                    sample = multiplier * (2.0f * pct -1.0f);
-                    volumeWaveformAdjustment = 0.35f;
-                    break;
-                    
-                case 'w' : // sawtooth wave "////////////"
-                    sample = 2.0f * pct -1.0f;
-                    volumeWaveformAdjustment = 0.225f;
-                    break;
-                    
-                case 'W': // sawtooth wave "\\\\\\\\\\\\\\"
-                    sample = -1 * (2.0f * pct -1.0f);
-                    volumeWaveformAdjustment = 0.225f;
-                    break;
-                    
-                case 'q': 
-                    // square wave
-                    sample = (sin(phase) > 0) ? 1 : -1;
-                    volumeWaveformAdjustment = 0.175f;
-                    break;
-                    
-                case 's': // sine wave (default)
-                default:
-                    sample = sin(phase);
-                    volumeWaveformAdjustment = 0.9995f;
-                    break;
-            }
-            
-			lAudio[i] = sample * volume * leftScale;
-			rAudio[i] = sample * volume * rightScale;
-            // Adjust ouput volume based on both target frequency and waveform
-            volumeWaveformAdjustment = 1.0f - ( (1.0f - volumeWaveformAdjustment) / (1.0f + (100.0f * heightPct)) );
-            volumeFrequencyAdjustment = 0.1f + pow(0.9f, targetFrequency/1000.0f);
-            volumeAdjustment = volumeFrequencyAdjustment *  volumeWaveformAdjustment;
-            output[i*nChannels    ] = lAudio[i] * volumeAdjustment;
-            output[i*nChannels + 1] = rAudio[i] * volumeAdjustment;
-/*
-            output[i*nChannels    ] = lAudio[i] * 20.0f/targetFrequency; 
-            output[i*nChannels + 1] = rAudio[i] * 20.0f/targetFrequency;
-//*/
-		}
-	} 
 }
 
 //--------------------------------------------------------------

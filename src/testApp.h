@@ -23,6 +23,8 @@ public:
     void gotMessage(ofMessage msg);
     
     // TODO: partisynth-handling properties and functions need to be defined
+    void updateSizeAdustments();
+    
     int     numPartisynths;
     vector <Partisynth> partisynths;
     int updatePartisynths;
@@ -30,7 +32,7 @@ public:
     // TODO: can this be moved into partisynth object?
     void audioOut(float * input, int bufferSize, int nChannels);
     
-    // TODO: eventually remove pretty much everything from here on down
+    // TODO: eventually remove as many functions as possible from here on down
     void setPhaseAdderTarget();
     void updateEmitters();
     void updateProperties(int x, int y);
