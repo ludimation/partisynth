@@ -28,7 +28,7 @@ void testApp::setup(){
     }
     
 	// Partisynth initialization
-    for (int i=0; i < numPartisynths; i++) {
+    for (int i=0; i < partisynths.size(); i++) {
         partisynths[i].init(0.5f);
     }
     
