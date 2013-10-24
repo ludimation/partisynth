@@ -14,6 +14,7 @@
 //--------------------------------------------------------------
 void testApp::setup(){
     
+    ofSetVerticalSync(TRUE);
 	ofSetFrameRate(60);
     updatePartisynths = 0;
     
