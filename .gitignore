@@ -26,3 +26,4 @@ xcuserdata/
 # Project.xcconfig
 
 bin/*Debug*
+!bin/partisynthDebug_0.1.3*
