@@ -343,7 +343,7 @@ void Partisynth::draw(){
         case 'd': // debug screen
         default: // modified from original audioOutputExample application
             //screenLabel += ": debug screen";
-            drawWaveforms = true;
+            //drawWaveforms = true;
             //drawEmitter = true;
             //drawInstructions = true;
             drawReport = true;
@@ -386,14 +386,9 @@ void Partisynth::draw(){
     }
     
     if (drawEmitter) {
-        
-        
-        
         for (int i=0; i < emitters.size(); i++) {
             emitters[i].draw( 0, 0 );
         }
-        
-
     }
     
     if (drawWaveforms) {
@@ -518,6 +513,7 @@ void Partisynth::keyPressed(int key){
 		volume = MIN(volume, 1);
 	}
 	
+    /* // TODO: clean up soundstream stuff
 	if( key == 'p' ){
         if (paused) {
             soundStream.start();
@@ -528,6 +524,7 @@ void Partisynth::keyPressed(int key){
             paused = true;
         }
 	}
+    // */
     
     // handle screen ids and waveform id
     switch (key) {

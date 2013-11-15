@@ -54,7 +54,7 @@ protected: //how is this different from "private:"?
     //------------------- for the wave synthesis
     void    setPhaseAdderTarget();
 
-    ofSoundStream soundStream;
+    // ofSoundStream soundStream; // TODO: clean up soundstream stuff
     float 	targetFrequency;
     float 	phase;
     float 	phaseAdder;

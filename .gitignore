@@ -27,3 +27,4 @@ xcuserdata/
 
 bin/*Debug*
 !bin/partisynthDebug_0.1.3*
+src-*

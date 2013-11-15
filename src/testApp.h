@@ -1,74 +1,70 @@
-#pragma once
+#ifndef _TEST_APP
+#define _TEST_APP
 
+#include "ofxOpenNI.h"
 #include "ofMain.h"
-#include "ofxXmlSettings.h"
-#include "ofxParticleEmitter.h"
-#include "partisynth.h"
+#include "partisynthmngr.h"
+
+#define MAX_DEVICES 2
 
 class testApp : public ofBaseApp{
+
 public:
     
-    void setup();
-    void update();
-    void draw();
+	void setup();
+	void update();
+	void draw();
+    void exit();
+    
+	void keyPressed  (int key);
+	void keyReleased(int key);
+	void mouseMoved(int x, int y );
+	void mouseDragged(int x, int y, int button);
+	void mousePressed(int x, int y, int button);
+	void mouseReleased(int x, int y, int button);
+	void windowResized(int w, int h);
 
-    void keyPressed  (int key);
-    void keyReleased(int key);
-    void mouseMoved(int x, int y );
-    void mouseDragged(int x, int y, int button);
-    void mousePressed(int x, int y, int button);
-    void mouseReleased(int x, int y, int button);
-    void windowResized(int w, int h);
-    void dragEvent(ofDragInfo dragInfo);
-    void gotMessage(ofMessage msg);
-    
-    // TODO: partisynth-handling properties and functions need to be defined
-    void updateSizeAdustments();
-    
-    int     numPartisynths;
-    vector <Partisynth> partisynths;
-    int updatePartisynths;
-    
-    // TODO: can this be moved into partisynth object?
     void audioOut(float * input, int bufferSize, int nChannels);
-    
-    // TODO: eventually remove as many functions as possible from here on down
-    void setPhaseAdderTarget();
-    void updateEmitters();
     void updateProperties(int x, int y);
     void updateProperties();
-    
-    ofSoundStream soundStream;
 
-    float 	pan;
-    int		sampleRate;
-    bool 	bNoise;    
-    float 	volume;
+    void userEvent(ofxOpenNIUserEvent & event);
+    void handEvent(ofxOpenNIHandEvent & event);
 
-    vector <float> lAudio;
-    vector <float> rAudio;
+    ofTrueTypeFont      verdana;
+	ofxOpenNI           openNIDevices[MAX_DEVICES];
+    int                 numDevices;
+    enum ofBlendMode    blendMode;
+    enum DepthColoring  depthColoring;
+    vector<ofPoint>     handPositions;
+    float               instability;
+    float               heightPct;
     
-    //------------------- for the wave synthesis
-    float 	targetFrequency;
-    float 	phase;
-    float 	phaseAdder;
-    float 	phaseAdderTarget;
+private:
+    ////////////
+    // screenID value convention
+    ////////////
+    // 0 > debug
+    // 1 > settings, instructions
+    // 2 > activity
+    // 3 > workout stats, credits
+    int cloudRes;
+    int stopped;
+	int angle;
+    int screenID;
     
-    bool    updateParticleTexture;
-    string  xmlFilename;
-    string  texFilename;
-    bool paused;
-    char waveform;
-    char screenID;
-    float phaseAdderTargetTween;
-    float volumeWaveformAdjustment;
-    float volumeFrequencyAdjustment;
-    float volumeAdjustment;
+	ofTrueTypeFont		font;
+    ofTrueTypeFont      fontSMALL;
     
-    float height;
-    float heightPct;
-protected:
-	
-    int                         numEmitters;
-    vector <ofxParticleEmitter> emitters;
+    string cals;
+    string labelCAL;
+    string bpm;
+    string labelBPM;
+    // string messageSMALL; // TODO: cleanup? Not sure this is used anywhere
+    
+    ofSoundStream       soundStream;
+    PartisynthMngr      partisynthmngr;
+    
 };
+
+#endif
