@@ -29,7 +29,7 @@ public:
     char    screenID;
     // this function might be a tricky one
     // can I just call "oudioout()" with proper arguments from the testApp object?
-    void    audioOut(float * input, int bufferSize, int nChannels);
+    void    audioOut(float * input, int bufferSize, int nChannels, char mode);
     
     float   sizeAdjustment;
     float 	pan;

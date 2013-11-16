@@ -147,14 +147,14 @@ void PartisynthMngr::update(vector<ofPoint> handPositions){
         } else {
             partisynths[partisynths.size() - 1].init();
             numPartisynths++;
-            updateSizeAdustments();
+            //updateSizeAdustments();
         }
         updatePartisynths = 0;
     } else if (updatePartisynths < 0){
         if (numPartisynths > 0) {
             numPartisynths--;
             // partisynths[numPartisynths].exit();
-            updateSizeAdustments();
+            // updateSizeAdustments();
         }
         updatePartisynths = 0;
     }
@@ -174,6 +174,7 @@ void PartisynthMngr::update(vector<ofPoint> handPositions){
         int r = 20;
         int x = handPositions[i].x;
         int y = handPositions[i].y;
+        int z = handPositions[i].z;
         // set default values so partisynths don't get stuck in the upper left of the screen
         if (!x && !y) { //TODO: clean this up? Not sure it's necessary any more
             x = ofGetWidth() / 2.0f;
@@ -183,6 +184,8 @@ void PartisynthMngr::update(vector<ofPoint> handPositions){
         float seconds = ofGetElapsedTimeMillis() / 1000.0f; // TODO: should eventually use beats to relate this to music more instead of seconds
         float radians = TWO_PI * seconds * rps; 
         partisynths[i].mouseMoved(x + r * sin(radians), y + r * cos(radians));
+        partisynths[i].sizeAdjustment = 0.01f + (MAX((2.0f - (z / 1500.0f)), 0.0f));
+        cout << "z = "<<z<<"; sizeAdjustment = "<<partisynths[i].sizeAdjustment<<endl;
     }
     
     //updateEmitters();
@@ -700,9 +703,18 @@ void PartisynthMngr::audioOut(float * output, int bufferSize, int nChannels){
         output[i*nChannels + 1] = 0;
     }
 
+    char mode = '+';
     // have partisynths write their audio to the buffer
     for (int i=0; i < numPartisynths; i++) {
-        partisynths[i].audioOut(output, bufferSize, nChannels); 
+        /*
+        if (i%2) {
+            mode = 'x';
+        }
+        else {
+            mode = '+';
+        }
+        //*/
+        partisynths[i].audioOut(output, bufferSize, nChannels, mode); 
     }
     
     for (int i = 0; i < bufferSize; i++){

@@ -120,6 +120,11 @@ void testApp::setup() {
         
         // add all focus gestures (ie., wave, click, raise arm)
         openNIDevices[deviceID].addAllHandFocusGestures();
+        // seems like the available gestures are:
+        // - gestureWave, 
+        // - gestureClick, 
+        // - gestureRaiseHand, 
+        // - gestureMovingHand
         // or you can add them one at a time
         //vector<string> gestureNames = openNIDevice.getAvailableGestures(); // you can use this to get a list of gestures
         // prints to console and/or you can use the returned vector
@@ -136,6 +141,7 @@ void testApp::setup() {
     openNIDevices[0].setMaxNumHands(8); // what is default?
 
     ofAddListener(openNIDevices[0].userEvent, this, &testApp::userEvent);
+    ofAddListener(openNIDevices[0].handEvent, this, &testApp::handEvent);
     // TODO: do I also need a handEvent listener?
     
     ofxOpenNIUser user;
@@ -211,7 +217,7 @@ void testApp::updateProperties(){
             float pctY =    1   - handPositions[i].y / 480.0f; // y positions range from 0 (top) - 480 (bottom)
             float pctZ =    1; // 1   - handPositions[i].z / 2500.0f; // z positions range from about 500 (near) - 3000 (far), but this should be done relative to player's torso since it requires a great deal of movement from the player to get this tuned appealingly
             instabilityPct += pctY * pctZ / handPositions.size();
-            cout << "handPositions["<<i<<"] = ("<<handPositions[i].x<<", "<<handPositions[i].y<<", "<<handPositions[i].z<<")"<<endl;
+            // cout << "handPositions["<<i<<"] = ("<<handPositions[i].x<<", "<<handPositions[i].y<<", "<<handPositions[i].z<<")"<<endl;
         }
     }
 
@@ -454,7 +460,7 @@ void testApp::draw(){
             ofScale(pct, pct, 0.0f);
             ofTranslate(x + offsetX, y + offsetY, 0.0f);
 
-            openNIDevices[deviceID].setDepthColoring(depthColoring); // COLORING_CYCLIC_RAINBOW by default
+            openNIDevices[deviceID].setDepthColoring(depthColoring); // COLORING_BLUES_INV by default
             /*
             enum DepthColoring {
                 COLORING_PSYCHEDELIC_SHADES = 0,
@@ -462,14 +468,17 @@ void testApp::draw(){
                 COLORING_RAINBOW,
                 COLORING_CYCLIC_RAINBOW,
                 COLORING_BLUES,
+                COLORING_BLUES_INV,
                 COLORING_GREY,
                 COLORING_STATUS,
                 COLORING_COUNT
             };
             //*/
             
+            ofEnableBlendMode(OF_BLENDMODE_ALPHA);
             openNIDevices[deviceID].drawDepth(0, 0, 640, 480);
-            // openNIDevices[deviceID].drawSkeletons(0, 0, 640, 480);
+            openNIDevices[deviceID].drawSkeletons(0, 0, 640, 480);
+            ofDisableBlendMode();
 
             /* // TODO: Would be nice to apply user masks in a more creative way
             // do some drawing of user clouds and masks
@@ -600,6 +609,15 @@ void testApp::userEvent(ofxOpenNIUserEvent & event){
 void testApp::handEvent(ofxOpenNIHandEvent & event){
     // show hand event messages in the console
     ofLogNotice() << getHandStatusAsString(event.handStatus) << "for hand" << event.id << "from device" << event.deviceID;
+    // seems like the available gestures are:
+    // - gestureWave, 
+    // - gestureClick, 
+    // - gestureRaiseHand, 
+    // - gestureMovingHand
+    // might just be called "Wave", "Click", "RaiseHand", "MovingHand"
+    // TODO: could use "MovingHand" or "Wave" to only create partisynths for waving or moving hands (might help with avoiding creating hands for relatively static BG elements
+    // TODO: What is the "Click" gesture?
+
 }
 
 //--------------------------------------------------------------

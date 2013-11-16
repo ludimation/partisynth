@@ -175,8 +175,10 @@ void Partisynth::updateProperties(){
 
 void Partisynth::updateProperties(int x, int y){
     
-    int width = ofGetWidth();
-	float height = ofGetHeight();
+    // int width = ofGetWidth();
+	// float height = ofGetHeight();
+    int width = 640;
+	float height = 480;
 
     // set default values so we don't get ridiculous pitches at start of program
     if (!x && !y) {
@@ -204,6 +206,7 @@ void Partisynth::updateProperties(int x, int y){
     // targetFrequency = 2000.0f * heightPct); 
     // exponential relationship between frequency and mouse Y
     // TODO: could make this "snap" to chromatic scales
+	// targetFrequency = 100.0f * pow(1.059463094359f, heightPct*75.0f); 
 	targetFrequency = 100.0f * pow(1.059463094359f, heightPct*75.0f); 
     
 	setPhaseAdderTarget();
@@ -220,7 +223,7 @@ void Partisynth::setPhaseAdderTarget () {
 }
 
 //--------------------------------------------------------------
-void Partisynth::audioOut(float * output, int bufferSize, int nChannels){
+void Partisynth::audioOut(float * output, int bufferSize, int nChannels, char mode){
 	//pan = 0.5f;
 	float leftScale = 1 - pan;
 	float rightScale = pan;
@@ -306,8 +309,18 @@ void Partisynth::audioOut(float * output, int bufferSize, int nChannels){
             volumeWaveformAdjustment = 1.0f - ( (1.0f - volumeWaveformAdjustment) / (1.0f + heightPct));
             volumeFrequencyAdjustment = 0.0001f + pow(0.9f, targetFrequency/250.0f);
             volumeAdjustment = volumeFrequencyAdjustment *  volumeWaveformAdjustment;
-            output[i*nChannels    ] += lAudio[i] * volumeAdjustment * sqrt(sizeAdjustment); 
-            output[i*nChannels + 1] += rAudio[i] * volumeAdjustment * sqrt(sizeAdjustment);
+            switch (mode) {
+                case 'x':
+                    output[i*nChannels    ] *= lAudio[i] * volumeAdjustment * sqrt(sizeAdjustment); 
+                    output[i*nChannels + 1] *= rAudio[i] * volumeAdjustment * sqrt(sizeAdjustment);
+                    break;
+                    
+                case '+':
+                default:
+                    output[i*nChannels    ] += lAudio[i] * volumeAdjustment * sqrt(sizeAdjustment); 
+                    output[i*nChannels + 1] += rAudio[i] * volumeAdjustment * sqrt(sizeAdjustment);
+                    break;
+            }
 		}
 	} 
 }
